@@ -1,13 +1,13 @@
-class Pancake {
+class Song {
   final String id;
-  final String color;
-  final double price;
+  final String title;
+  final String artist;
 
-  Pancake({required this.id, required this.color, required this.price});
+  Song({required this.id, required this.title, required this.artist});
 
   @override
   bool operator ==(Object other) {
-    return other is Pancake && other.id == id;
+    return other is Song && other.id == id;
   }
 
   @override

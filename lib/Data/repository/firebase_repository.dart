@@ -1,46 +1,93 @@
-class FirebasePancakeRepository extends PancakeRepository {
-  static const String baseUrl = 'YOUR URL';
-  static const String pancakesCollection = "pancakes";
-  static const String allPancakesUrl = '$baseUrl/$pancakesCollection.json';
+import '../../model/song_model.dart';
+import '../repository/song_repository.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:http/http.dart' as http;
+import '../DTO/song_dto.dart';
+class FirebaseSongRepository extends SongRepository {
+  static const String baseUrl = 'https://week8-flutter-default-rtdb.asia-southeast1.firebasedatabase.app/';
+  static const String songsCollection = "songs";
+  static const String allSongsUrl = '$baseUrl/$songsCollection.json';
 
-  @override
-  Future<Pancake> addPancake({required String color, required double price}) async {
-    Uri uri = Uri.parse(allPancakesUrl);
+  Future<Song> addSong({required String title, required String artist}) async {
+    Uri uri = Uri.parse(allSongsUrl);
 
-    // Create a new data
-    final newPancakeData = {'color': color, 'price': price};
+    final newSongData = {'title': title, 'artist': artist};
     final http.Response response = await http.post(
       uri,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode(newPancakeData),
+      body: json.encode(newSongData),
     );
 
-    // Handle errors
     if (response.statusCode != HttpStatus.ok) {
-      throw Exception('Failed to add user');
+      throw Exception('Failed to add song');
     }
 
-    // Firebase returns the new ID in 'name'
     final newId = json.decode(response.body)['name'];
 
-    // Return created user
-    return Pancake(id: newId, color: color, price: price);
+    return Song(id: newId, title: title, artist: artist);
   }
 
   @override
-  Future<List<Pancake>> getPancakes() async {
-    Uri uri = Uri.parse(allPancakesUrl);
+  // Fetches all songs from Firebase.
+  Future<List<Song>> getSongs() async {
+    Uri uri = Uri.parse(allSongsUrl);
     final http.Response response = await http.get(uri);
 
-    // Handle errors
-    if (response.statusCode != HttpStatus.ok && response.statusCode != HttpStatus.created) {
-      throw Exception('Failed to load');
+    if (response.statusCode != HttpStatus.ok &&
+        response.statusCode != HttpStatus.created) {
+      throw Exception('Failed to load songs');
     }
 
-    // Return all users
-    final data = json.decode(response.body) as Map<String, dynamic>?;
+    final dynamic decodedBody = json.decode(response.body); // Use dynamic
 
-    if (data == null) return [];
-    return data.entries.map((entry) => PancakeDto.fromJson(entry.key, entry.value)).toList();
+    if (decodedBody == null || decodedBody is! Map<String, dynamic>) {
+      // Handle cases where the response is not a valid map
+      if (decodedBody is String) {
+        print(
+          "Firebase returned a string, likely the database node is empty, or has a string value",
+        );
+      }
+      return []; // Return an empty list if the data is invalid
+    }
+
+    final data = decodedBody;
+
+    return data.entries
+        .map((entry) => SongDto.fromJson(entry.key, entry.value))
+        .toList();
+  }
+
+  @override
+  // Removes a song from Firebase.
+  Future<void> removeSong(String id) async {
+    final uri = Uri.parse('$baseUrl/$songsCollection/$id.json');
+    final response = await http.delete(uri);
+
+    if (response.statusCode != HttpStatus.ok) {
+      throw Exception('Failed to remove song');
+    }
+  }
+
+  @override
+  // Updates a song in Firebase.
+  Future<Song> updateSong({
+    required String id,
+    required String title,
+    required String artist,
+  }) async {
+    final uri = Uri.parse('$baseUrl/$songsCollection/$id.json');
+    final updatedSongData = {'title': title, 'artist': artist};
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(updatedSongData),
+    );
+
+    if (response.statusCode != HttpStatus.ok) {
+      throw Exception('Failed to update song');
+    }
+
+    return Song(id: id, title: title, artist: artist);
   }
 }

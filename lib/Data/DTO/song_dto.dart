@@ -1,9 +1,10 @@
-class PancakeDto {
-  static Pancake fromJson(String id, Map<String, dynamic> json) {
-    return Pancake(id: id, color: json['color'], price: json['price']);
+import '../../model/song_model.dart';
+class SongDto {
+  static Song fromJson(String id, Map<String, dynamic> json) {
+    return Song(id: id, title: json['title'], artist: json['artist']);
   }
 
-  static Map<String, dynamic> toJson(Pancake pancake) {
-    return {'name': pancake.color, 'price': pancake.price};
+  static Map<String, dynamic> toJson(Song song) {
+    return {'title': song.title, 'artist': song.artist};
   }
 }
